@@ -9,6 +9,16 @@ import Foundation
 import SwiftUI
 
 let buildNumber: Int = 0
+
+// MARK: Modified Build Tag
+// Appended to the upstream version on the settings page, so the build you have
+// installed identifies itself: "Version 3.2.6 Mod V1.0 (Release)".
+//
+// Info.plist's CFBundleShortVersionString is deliberately left at the upstream
+// "3.2.6". That field is expected to be a dot-separated list of integers, and
+// putting Chinese in it is the kind of thing that installs but then confuses
+// every version comparison the system does. The tag only has to look right.
+let modVersionTag = NSLocalizedString("Mod Version", comment: "")
 let DEBUG_MODE_ENABLED = false
 let USER_DEFAULTS_PATH = "/var/mobile/Library/Preferences/com.leemin.helium.plist"
 
@@ -32,7 +42,7 @@ struct SettingsView: View {
                 Section {
                     
                 } header: {
-                    Label(NSLocalizedString("Version ", comment:"") + "\(Bundle.main.releaseVersionNumber ?? NSLocalizedString("UNKNOWN", comment:"")) (\(buildNumber != 0 ? "\(buildNumber)" : NSLocalizedString("Release", comment:"")))", systemImage: "info")
+                    Label(NSLocalizedString("Version ", comment:"") + "\(Bundle.main.releaseVersionNumber ?? NSLocalizedString("UNKNOWN", comment:"")) \(modVersionTag) (\(buildNumber != 0 ? "\(buildNumber)" : NSLocalizedString("Release", comment:"")))", systemImage: "info")
                 }
                 
                 // Preferences List

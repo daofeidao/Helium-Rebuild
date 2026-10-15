@@ -148,7 +148,11 @@ struct EditWidgetSetView: View {
                                     .bold()
                                 Spacer()
                             }
-                            BetterSlider(value: $offsetPX, bounds: -300...300)
+                            // Offset range: 100 either way. The upstream build ran to 300, which put the
+                            // useful range in the middle sixth of the travel and made the slider
+                            // hard to land on a value. Anything already set beyond 100 has to
+                            // be re-dialed once -- SwiftUI clamps on touch, not on load.
+                            BetterSlider(value: $offsetPX, bounds: -100...100)
                                 .onChange(of: offsetPX) { _ in
                                     changesMade = true
                                 }
@@ -160,7 +164,7 @@ struct EditWidgetSetView: View {
                                     .bold()
                                 Spacer()
                             }
-                            BetterSlider(value: $offsetPY, bounds: -300...300)
+                            BetterSlider(value: $offsetPY, bounds: -100...100)
                                 .onChange(of: offsetPY) { _ in
                                     changesMade = true
                                 }
@@ -174,7 +178,7 @@ struct EditWidgetSetView: View {
                                     .bold()
                                 Spacer()
                             }
-                            BetterSlider(value: $offsetLX, bounds: -300...300)
+                            BetterSlider(value: $offsetLX, bounds: -100...100)
                                 .onChange(of: offsetLX) { _ in
                                     changesMade = true
                                 }
@@ -186,7 +190,7 @@ struct EditWidgetSetView: View {
                                     .bold()
                                 Spacer()
                             }
-                            BetterSlider(value: $offsetLY, bounds: -300...300)
+                            BetterSlider(value: $offsetLY, bounds: -100...100)
                                 .onChange(of: offsetLY) { _ in
                                     changesMade = true
                                 }

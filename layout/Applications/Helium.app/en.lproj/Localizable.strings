@@ -24,6 +24,7 @@
 "Version " = "Version ";
 "UNKNOWN" = "UNKNOWN";
 "Release" = "Release";
+"Mod Version" = "Mod V1.0";
 "Date Locale" = "Date Locale";
 "Weather Api key" = "QWeather Api key";
 "Hide Save Confirmation Popup" = "Hide Save Confirmation Popup";
