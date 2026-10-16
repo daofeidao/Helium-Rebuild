@@ -159,10 +159,10 @@ struct EditWidgetSetView: View {
                             // useful range in the middle sixth of the travel and made the slider
                             // hard to land on a value. Anything already set beyond 100 has to
                             // be re-dialed once -- SwiftUI clamps on touch, not on load.
-                            BetterSlider(value: $offsetPX, bounds: -100...100)
-                                .onChange(of: offsetPX) { _ in
-                                    changesMade = true
-                                }
+                            //
+                            // The triangles step by 0.2, and the slider saves the moment it is
+                            // released, so the widget moves while this screen is still open.
+                            NudgeSlider(value: $offsetPX, bounds: -100...100, step: 0.2, onCommit: { saveSet() })
                         }
                         // MARK: Portrait Offset Y
                         VStack {
@@ -171,10 +171,9 @@ struct EditWidgetSetView: View {
                                     .bold()
                                 Spacer()
                             }
-                            BetterSlider(value: $offsetPY, bounds: -100...100)
-                                .onChange(of: offsetPY) { _ in
-                                    changesMade = true
-                                }
+                            // Vertical: the down triangle is the one that moves the
+                            // widget further down, because positive Y is down.
+                            NudgeSlider(value: $offsetPY, bounds: -100...100, step: 0.2, vertical: true, onCommit: { saveSet() })
                         }
                     }
                     if orientationMode != 1 {
@@ -185,10 +184,7 @@ struct EditWidgetSetView: View {
                                     .bold()
                                 Spacer()
                             }
-                            BetterSlider(value: $offsetLX, bounds: -100...100)
-                                .onChange(of: offsetLX) { _ in
-                                    changesMade = true
-                                }
+                            NudgeSlider(value: $offsetLX, bounds: -100...100, step: 0.2, onCommit: { saveSet() })
                         }
                         // MARK: Landscape Offset Y
                         VStack {
@@ -197,10 +193,7 @@ struct EditWidgetSetView: View {
                                     .bold()
                                 Spacer()
                             }
-                            BetterSlider(value: $offsetLY, bounds: -100...100)
-                                .onChange(of: offsetLY) { _ in
-                                    changesMade = true
-                                }
+                            NudgeSlider(value: $offsetLY, bounds: -100...100, step: 0.2, vertical: true, onCommit: { saveSet() })
                         }
                     }
                 } header: {
@@ -449,7 +442,10 @@ struct EditWidgetSetView: View {
                                     .bold()
                                 Spacer()
                             }
-                            BetterSlider(value: $textOutlineWidth, bounds: 0.5...8, step: 0.5)
+                            // An outline stops reading as an outline once it is thick
+                            // enough to swallow the letter, and the useful sizing is
+                            // in the first couple of points: fine steps, short range.
+                            BetterSlider(value: $textOutlineWidth, bounds: 0.5...2, step: 0.1)
                                 .onChange(of: textOutlineWidth) { _ in
                                     changesMade = true
                                 }
@@ -482,7 +478,7 @@ struct EditWidgetSetView: View {
                                     .bold()
                                 Spacer()
                             }
-                            BetterSlider(value: $textGlowWidth, bounds: 0.5...8, step: 0.5)
+                            BetterSlider(value: $textGlowWidth, bounds: 0.5...6, step: 0.5)
                                 .onChange(of: textGlowWidth) { _ in
                                     changesMade = true
                                 }
@@ -501,6 +497,11 @@ struct EditWidgetSetView: View {
                     }
                 } header: {
                     Text(NSLocalizedString("Text Halo", comment: ""))
+                } footer: {
+                    // The HUD is a separate process, so a build that changes its
+                    // code only takes effect once that process is replaced. This
+                    // is the one place the user will look when nothing happens.
+                    Text(NSLocalizedString("If nothing changes, turn the HUD switch off and on again, or respring the device.", comment: ""))
                 }
                 
                 Section {
@@ -610,10 +611,12 @@ struct EditWidgetSetView: View {
                 textAlpha = widgetSet.textAlpha
                 
                 textOutlineEnabled = widgetSet.textOutlineEnabled
-                textOutlineWidth = widgetSet.textOutlineWidth
+                // Clamped to what the slider can describe, so the number on
+                // screen is the number that will be saved.
+                textOutlineWidth = min(max(widgetSet.textOutlineWidth, 0.5), 2)
                 textOutlineColor = HeliumHaloColor.color(fromHex: widgetSet.textOutlineColor)
                 textGlowEnabled = widgetSet.textGlowEnabled
-                textGlowWidth = widgetSet.textGlowWidth
+                textGlowWidth = min(max(widgetSet.textGlowWidth, 0.5), 6)
                 textGlowColor = HeliumHaloColor.color(fromHex: widgetSet.textGlowColor)
                 
                 changesMade = false

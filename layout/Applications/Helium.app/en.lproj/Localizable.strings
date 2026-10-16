@@ -24,7 +24,7 @@
 "Version " = "Version ";
 "UNKNOWN" = "UNKNOWN";
 "Release" = "Release";
-"Mod Version" = "Mod V2.0";
+"Mod Version" = "Mod V3.0";
 "Date Locale" = "Date Locale";
 "Weather Api key" = "QWeather Api key";
 "Hide Save Confirmation Popup" = "Hide Save Confirmation Popup";
@@ -155,6 +155,7 @@
 "Glow Width" = "Glow Width";
 "Glow Color" = "Glow Color";
 "Set Glow Color" = "Set Glow Color";
+"If nothing changes, turn the HUD switch off and on again, or respring the device." = "If nothing changes, turn the HUD switch off and on again, or respring the device.";
 "Add Widget" = "Add Widget";
 "Delete Widget" = "Delete Widget";
 "Are you sure you want to delete this widget?" = "Are you sure you want to delete this widget?";

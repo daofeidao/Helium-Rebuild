@@ -100,10 +100,10 @@ struct WidgetSetStruct: Identifiable, Equatable {
     // text, so the widths are what decide whether anything is drawn at all --
     // the flags only decide whether the editor shows the sliders.
     var textOutlineEnabled: Bool = false
-    var textOutlineWidth: Double = 2.0
+    var textOutlineWidth: Double = 1.0
     var textOutlineColor: String = "#000000"
     var textGlowEnabled: Bool = false
-    var textGlowWidth: Double = 4.0
+    var textGlowWidth: Double = 3.0
     var textGlowColor: String = "#000000"
 }
 
@@ -197,10 +197,10 @@ class WidgetManager: ObservableObject {
                     // these keys. Missing means off, not "on with a default
                     // width": nothing should grow a halo on its own.
                     textOutlineEnabled: s["textOutlineEnabled"] as? Bool ?? false,
-                    textOutlineWidth: s["textOutlineWidth"] as? Double ?? 2.0,
+                    textOutlineWidth: s["textOutlineWidth"] as? Double ?? 1.0,
                     textOutlineColor: s["textOutlineColor"] as? String ?? "#000000",
                     textGlowEnabled: s["textGlowEnabled"] as? Bool ?? false,
-                    textGlowWidth: s["textGlowWidth"] as? Double ?? 4.0,
+                    textGlowWidth: s["textGlowWidth"] as? Double ?? 3.0,
                     textGlowColor: s["textGlowColor"] as? String ?? "#000000"
                 )
                 widgetSet.colorDetails = colorDetailsStruct

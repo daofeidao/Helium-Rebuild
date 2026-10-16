@@ -16,16 +16,19 @@ enum HeliumHaloColor {
         var id: String { hex }
     }
 
-    /// One tap each. The picker beside them is for everything else.
+    /// Eight colours that are actually eight colours. The first list paired off
+    /// yellow/orange, cyan/blue and red/pink, which reads as the same colour
+    /// twice in a row of small circles; these are spread further apart, and the
+    /// grey is there because a black outline is often harsher than wanted.
     static let presets: [Preset] = [
         Preset(name: "White", hex: "#FFFFFF"),
         Preset(name: "Black", hex: "#000000"),
-        Preset(name: "Yellow", hex: "#FFCC00"),
+        Preset(name: "Grey", hex: "#8E8E93"),
+        Preset(name: "Red", hex: "#FF3B30"),
         Preset(name: "Orange", hex: "#FF9500"),
-        Preset(name: "Cyan", hex: "#00C7BE"),
         Preset(name: "Green", hex: "#34C759"),
-        Preset(name: "Blue", hex: "#007AFF"),
-        Preset(name: "Pink", hex: "#FF2D55")
+        Preset(name: "Blue", hex: "#0A84FF"),
+        Preset(name: "Purple", hex: "#BF5AF2")
     ]
 
     /// The same shape the HUD parses: six digits, plus alpha only when the
@@ -45,9 +48,40 @@ enum HeliumHaloColor {
         return String(format: "#%02X%02X%02X%02X", channel(red), channel(green), channel(blue), channel(alpha))
     }
 
-    /// Anything unreadable falls back to black, which is the halo default.
+    /// Parsed here rather than with the shared `Color(hex:)`. That initialiser
+    /// masks the six-digit form eight bits too low, so every six-digit colour
+    /// comes out as (0, 1, 1): the whole palette used to draw as one cyan, which
+    /// looks exactly like a palette full of duplicates. Reading the value in
+    /// this order is the whole point of the function, so do not "simplify" it
+    /// back to the shared one.
     static func color(fromHex hex: String) -> Color {
-        Color(hex: hex.uppercased()) ?? .black
+        var text = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if text.hasPrefix("#") {
+            text.removeFirst()
+        }
+        guard text.count == 6 || text.count == 8, let value = UInt32(text, radix: 16) else {
+            // Anything unreadable falls back to black, which is the halo default.
+            return .black
+        }
+
+        let red: Double
+        let green: Double
+        let blue: Double
+        let alpha: Double
+        if text.count == 8 {
+            // RRGGBBAA
+            red = Double((value >> 24) & 0xFF) / 255.0
+            green = Double((value >> 16) & 0xFF) / 255.0
+            blue = Double((value >> 8) & 0xFF) / 255.0
+            alpha = Double(value & 0xFF) / 255.0
+        } else {
+            // RRGGBB
+            red = Double((value >> 16) & 0xFF) / 255.0
+            green = Double((value >> 8) & 0xFF) / 255.0
+            blue = Double(value & 0xFF) / 255.0
+            alpha = 1.0
+        }
+        return Color(red: red, green: green, blue: blue, opacity: alpha)
     }
 
     static func isSelected(_ color: Color, _ preset: Preset) -> Bool {
@@ -62,7 +96,7 @@ struct HeliumHaloPresetRow: View {
     @Binding var changesMade: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             ForEach(HeliumHaloColor.presets) { preset in
                 Circle()
                     .fill(HeliumHaloColor.color(fromHex: preset.hex))

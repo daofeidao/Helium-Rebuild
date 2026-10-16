@@ -28,11 +28,13 @@ HeliumHaloStyle *HeliumHaloStyleFromProperties(NSDictionary *properties)
 
     // The width keys are the only ones that decide whether anything is drawn,
     // so a toggle that is on with a width of zero stays invisible rather than
-    // growing a halo nobody asked for.
+    // growing a halo nobody asked for. The caps are the maxima the editor's
+    // sliders offer -- kept in step with EditWidgetSetView -- so a value left
+    // over from an older build cannot draw a halo the slider cannot describe.
     double outlineWidth = getDoubleFromDictKey(properties, @"textOutlineWidth", 0.0);
     double glowWidth = getDoubleFromDictKey(properties, @"textGlowWidth", 0.0);
-    style.outlineWidth = getBoolFromDictKey(properties, @"textOutlineEnabled") ? MAX(0.0, outlineWidth) : 0.0;
-    style.glowWidth = getBoolFromDictKey(properties, @"textGlowEnabled") ? MAX(0.0, glowWidth) : 0.0;
+    style.outlineWidth = getBoolFromDictKey(properties, @"textOutlineEnabled") ? MIN(2.0, MAX(0.0, outlineWidth)) : 0.0;
+    style.glowWidth = getBoolFromDictKey(properties, @"textGlowEnabled") ? MIN(6.0, MAX(0.0, glowWidth)) : 0.0;
 
     // Dark by default: the halo exists to hold white text apart from whatever
     // is behind it, and that is the one colour that always can.
