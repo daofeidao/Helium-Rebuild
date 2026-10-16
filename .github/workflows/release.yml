@@ -16,6 +16,11 @@ env:
   THEOS: ''
   XCODE_VERSION: '15.1'
   logT: ''
+  # Bumped with every modified release. The gate below insists the strings that
+  # end up inside the app carry exactly this tag, in both languages: a settings
+  # page that says V1.0 on a V2.0 build is a lie that nothing else catches.
+  MOD_TAG_ZH: '修改版V2.0'
+  MOD_TAG_EN: 'Mod V2.0'
 
 jobs:
   build:
@@ -144,10 +149,20 @@ jobs:
           EN=$APP/en.lproj/Localizable.strings
           [ -f "$ZH" ] || { echo "FAIL: $ZH missing"; exit 1; }
           [ -f "$EN" ] || { echo "FAIL: $EN missing"; exit 1; }
-          plutil -convert xml1 -o - "$ZH" | grep -q '修改版V1.0' \
-            || { echo "FAIL: zh bundle does not carry the V1.0 tag"; exit 1; }
-          plutil -convert xml1 -o - "$EN" | grep -q 'Mod V1.0' \
-            || { echo "FAIL: en bundle does not carry the V1.0 tag"; exit 1; }
+          ZH_DUMP=$(plutil -convert xml1 -o - "$ZH")
+          EN_DUMP=$(plutil -convert xml1 -o - "$EN")
+          echo "$ZH_DUMP" | grep -q "$MOD_TAG_ZH" \
+            || { echo "FAIL: zh bundle does not carry the '$MOD_TAG_ZH' tag"; exit 1; }
+          echo "$EN_DUMP" | grep -q "$MOD_TAG_EN" \
+            || { echo "FAIL: en bundle does not carry the '$MOD_TAG_EN' tag"; exit 1; }
+          # The halo's rows, both languages. A key that only reaches one file
+          # shows up as raw English on a Chinese phone, with no error anywhere.
+          for KEY in 'Text Halo' 'Text Outline' 'Outline Width' 'Outline Color' 'Text Glow' 'Glow Width' 'Glow Color'; do
+            echo "$ZH_DUMP" | grep -q "$KEY" \
+              || { echo "FAIL: zh bundle is missing the '$KEY' string"; exit 1; }
+            echo "$EN_DUMP" | grep -q "$KEY" \
+              || { echo "FAIL: en bundle is missing the '$KEY' string"; exit 1; }
+          done
 
           SIZE=$(stat -f%z "../$TIPA")
           [ "$SIZE" -gt 1000000 ] || { echo "FAIL: tipa is only $SIZE bytes"; exit 1; }
