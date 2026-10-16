@@ -24,7 +24,7 @@
 "Version " = "版本 ";
 "UNKNOWN" = "未知";
 "Release" = "发布";
-"Mod Version" = "修改版V1.0";
+"Mod Version" = "修改版V2.0";
 "Date Locale" = "日期地区";
 "Weather Api key" = "和风天气ApiKey";
 "Show when Rotating" = "旋转屏幕时显示";
@@ -149,6 +149,15 @@
 "Font Size" = "字体大小";
 "Text Alpha" = "文字透明度";
 "Text Properties" = "文本属性";
+"Text Halo" = "文字光晕";
+"Text Outline" = "文字描边";
+"Outline Width" = "描边宽度";
+"Outline Color" = "描边颜色";
+"Set Outline Color" = "选择描边颜色";
+"Text Glow" = "文字发光";
+"Glow Width" = "光晕宽度";
+"Glow Color" = "光晕颜色";
+"Set Glow Color" = "选择光晕颜色";
 "Add Widget" = "添加小部件";
 "Delete Widget" = "删除小部件";
 "Are you sure you want to delete this widget?" = "确认删除此小部件？";

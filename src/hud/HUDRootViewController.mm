@@ -3,6 +3,7 @@
 
 #import "HUDRootViewController.h"
 #import "AnyBackdropView.h"
+#import "HeliumHalo.h"
 #import "Helium-Swift.h"
 
 #import "../widgets/WidgetManager.h"
@@ -108,6 +109,8 @@ static void ReloadHUD
     
     NSMutableArray <AnyBackdropView *> *_backdropViews;
     NSMutableArray <UILabel *> *_maskLabelViews;
+    // one halo label per widget set, sitting behind the text
+    NSMutableArray <HeliumHaloLabel *> *_haloViews;
 
     UIView *_contentView;
     
@@ -246,6 +249,28 @@ static void ReloadHUD
             [maskLabelView setHidden:YES];
         }
 
+        // MARK: Text Halo
+        if (i < (NSInteger)_haloViews.count) {
+            HeliumHaloLabel *haloView = [_haloViews objectAtIndex:i];
+            HeliumHaloStyle *haloStyle = HeliumHaloStyleFromProperties(properties);
+            haloView.textAlignment = textAlign;
+            haloView.font = textFont;
+            haloView.alpha = textAlpha;
+            // The halo sits behind whichever view is showing the text, so it
+            // takes its visibility from that view: a widget the user turned
+            // off, or an orientation it is not shown in, means no halo either.
+            // It is set here and not on every repaint, or the once-a-second
+            // text update would keep switching a hidden halo back on.
+            BOOL textVisible = dynamicColor ? !backdropView.hidden : !labelView.hidden;
+            haloView.hidden = !(textVisible && haloStyle.isActive);
+            if (haloView.haloPad != haloStyle.pad) {
+                haloView.haloPad = haloStyle.pad;
+                // A wider halo means a bigger frame, which is a new layout
+                // rather than a repaint.
+                [self.view setNeedsUpdateConstraints];
+            }
+        }
+
         if ([self debugBorder]) {
             labelView.layer.borderWidth = 1.0;
             // backdropView.layer.borderWidth = 1.0;
@@ -312,6 +337,7 @@ static void ReloadHUD
         _labelViews = [NSMutableArray array];
         _backdropViews = [NSMutableArray array];
         _maskLabelViews = [NSMutableArray array];
+        _haloViews = [NSMutableArray array];
         _orientationObserver = [[objc_getClass("FBSOrientationObserver") alloc] init];
         __weak HUDRootViewController *weakSelf = self;
         [_orientationObserver setHandler:^(FBSOrientationUpdate *orientationUpdate) {
@@ -377,6 +403,8 @@ static void ReloadHUD
         UILabel *maskLabelView = [_maskLabelViews objectAtIndex:i];
 
         NSDictionary *properties = [widgetProps objectAtIndex:i];
+        HeliumHaloLabel *haloView = (i < (NSInteger)_haloViews.count) ? [_haloViews objectAtIndex:i] : nil;
+        HeliumHaloStyle *haloStyle = HeliumHaloStyleFromProperties(properties);
         if (!labelView || !maskLabelView || !properties)
             break;
         NSArray *identifiers = [properties objectForKey: @"widgetIDs"] ? [properties objectForKey: @"widgetIDs"] : @[];
@@ -389,7 +417,7 @@ static void ReloadHUD
         if (isEnabled) {
             [[EZTimer shareInstance] timer:[NSString stringWithFormat:@"labelview%d", i] timerInterval:updateInterval leeway:0.1 resumeType:EZTimerResumeTypeNow queue:EZTimerQueueTypeConcurrent queueName:@"update" repeats:YES action:^(NSString *timerName) {
                 dispatch_sync(dispatch_get_main_queue(), ^{
-                    [self updateLabel: labelView updateMaskLabel: maskLabelView backdropView: backdropView identifiers: identifiers fontSize: fontSize autoResizes: autoResizes width: width height: height];
+                    [self updateLabel: labelView updateMaskLabel: maskLabelView updateHaloLabel: haloView haloStyle: haloStyle backdropView: backdropView identifiers: identifiers fontSize: fontSize autoResizes: autoResizes width: width height: height];
                 });
             }];
         } else {
@@ -398,12 +426,13 @@ static void ReloadHUD
             [labelView setHidden:YES];
             [backdropView setHidden:YES];
             [maskLabelView setHidden:YES];
+            [haloView setHidden:YES];
             [[EZTimer shareInstance] cancel:[NSString stringWithFormat:@"labelview%d", i]];
         }
     }
 }
 
-- (void) updateLabel:(UILabel *) label updateMaskLabel:(UILabel *) maskLabel backdropView:(AnyBackdropView *) backdropView identifiers:(NSArray *) identifiers fontSize:(double) fontSize autoResizes:(BOOL) autoResizes width:(CGFloat) width height:(CGFloat) height
+- (void) updateLabel:(UILabel *) label updateMaskLabel:(UILabel *) maskLabel updateHaloLabel:(HeliumHaloLabel *) haloLabel haloStyle:(HeliumHaloStyle *) haloStyle backdropView:(AnyBackdropView *) backdropView identifiers:(NSArray *) identifiers fontSize:(double) fontSize autoResizes:(BOOL) autoResizes width:(CGFloat) width height:(CGFloat) height
 {
 #if DEBUG
     os_log_debug(OS_LOG_DEFAULT, "updateLabel");
@@ -413,6 +442,9 @@ static void ReloadHUD
         // NSLog(@"boom attr:%@", attributedText);
         [label setAttributedText: attributedText];
         [maskLabel setAttributedText: attributedText];
+        // The same string once more for the halo, which is drawn underneath and
+        // therefore can only show outside the glyphs.
+        HeliumDrawHalo(haloLabel, attributedText, fontSize, haloStyle);
         if (autoResizes) {
             [self useSizeThatFitsZeroWithLabel:maskLabel];
         } else {
@@ -474,6 +506,22 @@ static void ReloadHUD
         blurView.translatesAutoresizingMaskIntoConstraints = NO;
         [_contentView addSubview:blurView];
         [_blurViews addObject:blurView];
+        // create the halo label (behind the text, in front of any blur panel)
+        HeliumHaloLabel *haloView = [[HeliumHaloLabel alloc] initWithFrame:CGRectZero];
+        haloView.numberOfLines = 0;
+        haloView.lineBreakMode = NSLineBreakByWordWrapping;
+        haloView.translatesAutoresizingMaskIntoConstraints = NO;
+        haloView.userInteractionEnabled = NO;
+        // The halo is sized by the constraints in updateViewConstraints, not by
+        // its own content: with hugging and compression resistance left at
+        // their defaults, the halo's idea of its own width would feed back into
+        // the text label's width through the equality between the two.
+        [haloView setContentHuggingPriority:1 forAxis:UILayoutConstraintAxisHorizontal];
+        [haloView setContentHuggingPriority:1 forAxis:UILayoutConstraintAxisVertical];
+        [haloView setContentCompressionResistancePriority:1 forAxis:UILayoutConstraintAxisHorizontal];
+        [haloView setContentCompressionResistancePriority:1 forAxis:UILayoutConstraintAxisVertical];
+        [_contentView addSubview:haloView];
+        [_haloViews addObject:haloView];
         // create the label
         UILabel *labelView = [[UILabel alloc] initWithFrame: CGRectZero];
         labelView.numberOfLines = 0;
@@ -588,6 +636,7 @@ static void ReloadHUD
         UILabel *labelView = [_labelViews objectAtIndex:i];
         AnyBackdropView *backdropView = [_backdropViews objectAtIndex:i];
         // UILabel *maskLabelView = [_maskLabelViews objectAtIndex:i];
+        HeliumHaloLabel *haloView = (i < (NSInteger)_haloViews.count) ? [_haloViews objectAtIndex:i] : nil;
         NSDictionary *properties = [widgetProps objectAtIndex:i];
         if (!blurView || !labelView || !properties)
             break;
@@ -636,6 +685,21 @@ static void ReloadHUD
             [blurView.trailingAnchor constraintEqualToAnchor:labelView.trailingAnchor constant:4],
             [blurView.bottomAnchor constraintEqualToAnchor:labelView.bottomAnchor constant:2],
         ]];
+
+        // MARK: Text Halo Constraints
+        // Same box as the text, grown on every side by the halo's width: a label
+        // clips its own drawing, and the halo is by definition outside the text.
+        // The inner text box is put back by HeliumHaloLabel itself, so growing
+        // the frame does not move the glyphs.
+        if (haloView) {
+            CGFloat haloPad = haloView.haloPad;
+            [_constraints addObjectsFromArray:@[
+                [haloView.centerXAnchor constraintEqualToAnchor:labelView.centerXAnchor],
+                [haloView.centerYAnchor constraintEqualToAnchor:labelView.centerYAnchor],
+                [haloView.widthAnchor constraintEqualToAnchor:labelView.widthAnchor constant:haloPad * 2.0],
+                [haloView.heightAnchor constraintEqualToAnchor:labelView.heightAnchor constant:haloPad * 2.0],
+            ]];
+        }
     }
 
     [_constraints addObjectsFromArray:@[
@@ -688,6 +752,7 @@ static inline CGRect orientationBounds(UIInterfaceOrientation orientation, CGRec
         UILabel *labelView = [_labelViews objectAtIndex:i];
         AnyBackdropView *backdropView = [_backdropViews objectAtIndex: i];
         UILabel *maskLabelView = [_maskLabelViews objectAtIndex:i];
+        HeliumHaloLabel *haloView = (i < (NSInteger)_haloViews.count) ? [_haloViews objectAtIndex:i] : nil;
 
         NSDictionary *properties = [widgetProps objectAtIndex:i];
         NSInteger orientationMode = getIntFromDictKey(properties, @"orientationMode", 0);
@@ -729,6 +794,13 @@ static inline CGRect orientationBounds(UIInterfaceOrientation orientation, CGRec
                         [maskLabelView setHidden:YES];
                     }
                 }break;
+            }
+            // The halo follows the text it sits behind, so it hides and shows
+            // with it rather than on its own schedule.
+            if (haloView) {
+                HeliumHaloStyle *haloStyle = HeliumHaloStyleFromProperties(properties);
+                BOOL textVisible = dynamicColor ? !backdropView.hidden : !labelView.hidden;
+                [haloView setHidden:!(textVisible && haloStyle.isActive)];
             }
         }
     }

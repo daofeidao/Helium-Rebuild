@@ -50,6 +50,13 @@ struct EditWidgetSetView: View {
     @State var fontSize: Double = 10.0
     @State var textAlpha: Double = 1.0
     
+    @State var textOutlineEnabled: Bool = false
+    @State var textOutlineWidth: Double = 2.0
+    @State var textOutlineColor: Color = .black
+    @State var textGlowEnabled: Bool = false
+    @State var textGlowWidth: Double = 4.0
+    @State var textGlowColor: Color = .black
+    
     @State var changesMade: Bool = false
 
     private let fonts: [String] = FontUtils.allFontNames()
@@ -424,6 +431,78 @@ struct EditWidgetSetView: View {
                     Text(NSLocalizedString("Text Properties", comment: ""))
                 }
                 
+                // MARK: Text Halo
+                Section {
+                    // MARK: Text Outline
+                    Toggle(isOn: $textOutlineEnabled) {
+                        Text(NSLocalizedString("Text Outline", comment: ""))
+                            .bold()
+                            .minimumScaleFactor(0.5)
+                    }
+                    .onChange(of: textOutlineEnabled) { _ in
+                        changesMade = true
+                    }
+                    if textOutlineEnabled {
+                        VStack {
+                            HStack {
+                                Text(NSLocalizedString("Outline Width", comment: ""))
+                                    .bold()
+                                Spacer()
+                            }
+                            BetterSlider(value: $textOutlineWidth, bounds: 0.5...8, step: 0.5)
+                                .onChange(of: textOutlineWidth) { _ in
+                                    changesMade = true
+                                }
+                        }
+                        HStack {
+                            Text(NSLocalizedString("Outline Color", comment: ""))
+                                .bold()
+                            Spacer()
+                            ColorPicker(NSLocalizedString("Set Outline Color", comment: ""), selection: $textOutlineColor)
+                                .labelsHidden()
+                                .onChange(of: textOutlineColor) { _ in
+                                    changesMade = true
+                                }
+                        }
+                        HeliumHaloPresetRow(selection: $textOutlineColor, changesMade: $changesMade)
+                    }
+                    // MARK: Text Glow
+                    Toggle(isOn: $textGlowEnabled) {
+                        Text(NSLocalizedString("Text Glow", comment: ""))
+                            .bold()
+                            .minimumScaleFactor(0.5)
+                    }
+                    .onChange(of: textGlowEnabled) { _ in
+                        changesMade = true
+                    }
+                    if textGlowEnabled {
+                        VStack {
+                            HStack {
+                                Text(NSLocalizedString("Glow Width", comment: ""))
+                                    .bold()
+                                Spacer()
+                            }
+                            BetterSlider(value: $textGlowWidth, bounds: 0.5...8, step: 0.5)
+                                .onChange(of: textGlowWidth) { _ in
+                                    changesMade = true
+                                }
+                        }
+                        HStack {
+                            Text(NSLocalizedString("Glow Color", comment: ""))
+                                .bold()
+                            Spacer()
+                            ColorPicker(NSLocalizedString("Set Glow Color", comment: ""), selection: $textGlowColor)
+                                .labelsHidden()
+                                .onChange(of: textGlowColor) { _ in
+                                    changesMade = true
+                                }
+                        }
+                        HeliumHaloPresetRow(selection: $textGlowColor, changesMade: $changesMade)
+                    }
+                } header: {
+                    Text(NSLocalizedString("Text Halo", comment: ""))
+                }
+                
                 Section {
                     // MARK: Add Widget Button
                     Button(action: {
@@ -530,6 +609,13 @@ struct EditWidgetSetView: View {
                 fontSize = widgetSet.fontSize
                 textAlpha = widgetSet.textAlpha
                 
+                textOutlineEnabled = widgetSet.textOutlineEnabled
+                textOutlineWidth = widgetSet.textOutlineWidth
+                textOutlineColor = HeliumHaloColor.color(fromHex: widgetSet.textOutlineColor)
+                textGlowEnabled = widgetSet.textGlowEnabled
+                textGlowWidth = widgetSet.textGlowWidth
+                textGlowColor = HeliumHaloColor.color(fromHex: widgetSet.textGlowColor)
+                
                 changesMade = false
             }
             .onDisappear {
@@ -598,7 +684,14 @@ struct EditWidgetSetView: View {
             textItalic: textItalic,
             textAlignment: textAlignment,
             fontSize: fontSize,
-            textAlpha: textAlpha
+            textAlpha: textAlpha,
+            
+            textOutlineEnabled: textOutlineEnabled,
+            textOutlineWidth: textOutlineWidth,
+            textOutlineColor: HeliumHaloColor.hex(from: textOutlineColor),
+            textGlowEnabled: textGlowEnabled,
+            textGlowWidth: textGlowWidth,
+            textGlowColor: HeliumHaloColor.hex(from: textGlowColor)
         ), save: save)
         let updatedSet = widgetManager.getUpdatedWidgetSet(widgetSet: widgetSet)
         if updatedSet != nil {

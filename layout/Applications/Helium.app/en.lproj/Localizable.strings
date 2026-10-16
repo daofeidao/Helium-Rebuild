@@ -24,7 +24,7 @@
 "Version " = "Version ";
 "UNKNOWN" = "UNKNOWN";
 "Release" = "Release";
-"Mod Version" = "Mod V1.0";
+"Mod Version" = "Mod V2.0";
 "Date Locale" = "Date Locale";
 "Weather Api key" = "QWeather Api key";
 "Hide Save Confirmation Popup" = "Hide Save Confirmation Popup";
@@ -146,6 +146,15 @@
 "Font Size" = "Font Size";
 "Text Alpha" = "Text Alpha";
 "Text Properties" = "Text Properties";
+"Text Halo" = "Text Halo";
+"Text Outline" = "Text Outline";
+"Outline Width" = "Outline Width";
+"Outline Color" = "Outline Color";
+"Set Outline Color" = "Set Outline Color";
+"Text Glow" = "Text Glow";
+"Glow Width" = "Glow Width";
+"Glow Color" = "Glow Color";
+"Set Glow Color" = "Set Glow Color";
 "Add Widget" = "Add Widget";
 "Delete Widget" = "Delete Widget";
 "Are you sure you want to delete this widget?" = "Are you sure you want to delete this widget?";

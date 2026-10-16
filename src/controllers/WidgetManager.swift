@@ -95,6 +95,16 @@ struct WidgetSetStruct: Identifiable, Equatable {
     var textAlignment: Int
     var fontSize: Double
     var textAlpha: Double
+    
+    // Text halo. The HUD paints these on a second label that sits behind the
+    // text, so the widths are what decide whether anything is drawn at all --
+    // the flags only decide whether the editor shows the sliders.
+    var textOutlineEnabled: Bool = false
+    var textOutlineWidth: Double = 2.0
+    var textOutlineColor: String = "#000000"
+    var textGlowEnabled: Bool = false
+    var textGlowWidth: Double = 4.0
+    var textGlowColor: String = "#000000"
 }
 
 // MARK: Widget Manager Class
@@ -182,7 +192,16 @@ class WidgetManager: ObservableObject {
                     textItalic: s["textItalic"] as? Bool ?? false,
                     textAlignment: s["textAlignment"] as? Int ?? 1,
                     fontSize: s["fontSize"] as? Double ?? 10.0,
-                    textAlpha: s["textAlpha"] as? Double ?? 1.0
+                    textAlpha: s["textAlpha"] as? Double ?? 1.0,
+                    // A widget set saved before the halo existed has none of
+                    // these keys. Missing means off, not "on with a default
+                    // width": nothing should grow a halo on its own.
+                    textOutlineEnabled: s["textOutlineEnabled"] as? Bool ?? false,
+                    textOutlineWidth: s["textOutlineWidth"] as? Double ?? 2.0,
+                    textOutlineColor: s["textOutlineColor"] as? String ?? "#000000",
+                    textGlowEnabled: s["textGlowEnabled"] as? Bool ?? false,
+                    textGlowWidth: s["textGlowWidth"] as? Double ?? 4.0,
+                    textGlowColor: s["textGlowColor"] as? String ?? "#000000"
                 )
                 widgetSet.colorDetails = colorDetailsStruct
                 sets.append(widgetSet)
@@ -247,6 +266,13 @@ class WidgetManager: ObservableObject {
             wSet["textAlignment"] = s.textAlignment
             wSet["fontSize"] = s.fontSize
             wSet["textAlpha"] = s.textAlpha
+            
+            wSet["textOutlineEnabled"] = s.textOutlineEnabled
+            wSet["textOutlineWidth"] = s.textOutlineWidth
+            wSet["textOutlineColor"] = s.textOutlineColor
+            wSet["textGlowEnabled"] = s.textGlowEnabled
+            wSet["textGlowWidth"] = s.textGlowWidth
+            wSet["textGlowColor"] = s.textGlowColor
             
             dict.append(wSet)
         }
@@ -419,6 +445,13 @@ class WidgetManager: ObservableObject {
                 widgetSets[i].textAlignment = ns.textAlignment
                 widgetSets[i].fontSize = ns.fontSize
                 widgetSets[i].textAlpha = ns.textAlpha
+                
+                widgetSets[i].textOutlineEnabled = ns.textOutlineEnabled
+                widgetSets[i].textOutlineWidth = ns.textOutlineWidth
+                widgetSets[i].textOutlineColor = ns.textOutlineColor
+                widgetSets[i].textGlowEnabled = ns.textGlowEnabled
+                widgetSets[i].textGlowWidth = ns.textGlowWidth
+                widgetSets[i].textGlowColor = ns.textGlowColor
                 break
             }
         }
