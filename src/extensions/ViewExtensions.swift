@@ -100,20 +100,31 @@ struct NudgeSlider: View {
     @Binding var value: Double
     var bounds: ClosedRange<Double>
     var step: Double
-    /// The offsets are vertical when they move the widget up and down. Positive
-    /// is down there, so the up triangle subtracts.
+    /// The offsets move the widget up and down rather than left and right when
+    /// this is set. Positive is still down, so the two triangles swap over: with
+    /// a value that grows to the right, the up end is the left one.
     var vertical: Bool = false
     var onCommit: () -> Void
     
     var body: some View {
+        // The triangle at an end is the direction the widget goes when that end
+        // is pushed: pressing it takes a step, and dragging towards it does the
+        // same thing, because dragging towards an end moves the value that way.
+        // For the offsets that means the widget follows the triangle, which is
+        // the whole point of the control.
+        //
+        // The vertical pair is therefore up on the left and down on the right --
+        // a bigger value is further down, so the down end of a slider that grows
+        // to the right is the right one. It read the other way round before, and
+        // pressing down moved the widget up.
         HStack(spacing: 8) {
-            nudgeButton(vertical ? "arrowtriangle.down.fill" : "arrowtriangle.left.fill", delta: -step)
+            nudgeButton(vertical ? "arrowtriangle.up.fill" : "arrowtriangle.left.fill", delta: -step)
             BetterSlider(value: $value, bounds: bounds, onEditingChanged: { editing in
                 if !editing {
                     onCommit()
                 }
             })
-            nudgeButton(vertical ? "arrowtriangle.up.fill" : "arrowtriangle.right.fill", delta: step)
+            nudgeButton(vertical ? "arrowtriangle.down.fill" : "arrowtriangle.right.fill", delta: step)
         }
     }
     

@@ -682,12 +682,19 @@ static void ReloadHUD
             [_constraints addObject:[labelView.bottomAnchor constraintEqualToAnchor:_contentView.bottomAnchor constant: ([self isLandscapeOrientation] ? offsetLY : offsetPY)]];
         }
         // set the horizontal anchor
+        //
+        // Positive X is to the right, whichever edge the widget is anchored to.
+        // This used to mean "inwards from the edge it is anchored to", so with
+        // the right edge as the anchor a bigger value moved the widget left:
+        // the arrow pointed one way and the widget went the other. Right
+        // anchored sets were negated once when that changed -- see the
+        // migration in WidgetManager -- so nothing on the screen moved.
         if (anchorSide == 1) {
             [_constraints addObject:[labelView.centerXAnchor constraintEqualToAnchor:_contentView.centerXAnchor constant: ([self isLandscapeOrientation] ? offsetLX : offsetPX)]];
         } else if (anchorSide == 0) {
             [_constraints addObject:[labelView.leadingAnchor constraintEqualToAnchor:_contentView.leadingAnchor constant: ([self isLandscapeOrientation] ? offsetLX : offsetPX)]];
         } else {
-            [_constraints addObject:[labelView.trailingAnchor constraintEqualToAnchor:_contentView.trailingAnchor constant: ([self isLandscapeOrientation] ? -offsetLX : -offsetPX)]];
+            [_constraints addObject:[labelView.trailingAnchor constraintEqualToAnchor:_contentView.trailingAnchor constant: ([self isLandscapeOrientation] ? offsetLX : offsetPX)]];
         }
 
         // set the width

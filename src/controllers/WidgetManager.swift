@@ -117,7 +117,55 @@ class WidgetManager: ObservableObject {
     
     convenience init() {
         self.init(widgetSets: [])
+        // Before anything is read: a widget set saved by an older build has its
+        // right-anchored X the other way round.
+        migrateXOffsetConvention()
         self.widgetSets = getWidgetSets()
+    }
+
+    /// Turn the right-anchored X offsets around, once.
+    ///
+    /// Positive X now means to the right for every anchor; it used to mean
+    /// "inwards from the edge the widget is anchored to", which is the opposite
+    /// on the right edge. Negating the stored value keeps every widget exactly
+    /// where it is on the screen, so this is invisible except in the number the
+    /// editor shows.
+    ///
+    /// The marker is written first, and into the same file as the values, so
+    /// that a failure in between leaves the values alone: the worst case is a
+    /// user who dials their X back by hand, never a value turned around twice.
+    /// Keeping the marker in that file, rather than in this app's container,
+    /// also means restoring settings from a backup does the right thing --
+    /// a backup from before this build has no marker and is migrated, one from
+    /// after it has the marker and is left alone.
+    private func migrateXOffsetConvention() {
+        let defaults = UserDefaults.standard
+        guard !defaults.bool(forKey: "xOffsetPositiveRight", forPath: USER_DEFAULTS_PATH) else { return }
+
+        defaults.setValue(true, forKey: "xOffsetPositiveRight", forPath: USER_DEFAULTS_PATH)
+
+        guard var sets: [[String: Any]] = defaults.array(forKey: "widgetProperties", forPath: USER_DEFAULTS_PATH) as? [[String: Any]] else { return }
+
+        var flipped = false
+        for i in sets.indices {
+            // Only the right edge anchors were the other way round. Centre and
+            // left already meant "to the right", and Y was never affected.
+            guard (sets[i]["anchor"] as? Int ?? 0) == 2 else { continue }
+            for key in ["offsetPX", "offsetLX"] {
+                // NSNumber rather than Double: a plist may hold either, and an
+                // offset of 0 is written as an integer by a lot of tools.
+                guard let value = sets[i][key] as? NSNumber else { continue }
+                sets[i][key] = -value.doubleValue
+                flipped = true
+            }
+        }
+
+        if flipped {
+            defaults.setValue(sets, forKey: "widgetProperties", forPath: USER_DEFAULTS_PATH)
+            // The HUD reads this file itself, so it is still drawing the old
+            // positions until it is told to look again.
+            DarwinNotificationCenter.default.post(name: NOTIFY_RELOAD_HUD)
+        }
     }
     
     // get the list of widget sets
@@ -381,9 +429,12 @@ class WidgetManager: ObservableObject {
             
             anchor: anchor,
             anchorY: 0,
-            offsetPX: anchor == 1 ? 0.0 : 10.0,
+            // A new set starts a little way inside the edge it is anchored to.
+            // On the right that is a negative X now that positive X is to the
+            // right; the editor shows it as such.
+            offsetPX: anchor == 0 ? 10.0 : (anchor == 2 ? -10.0 : 0.0),
             offsetPY: 0.0,
-            offsetLX: anchor == 1 ? 0.0 : 10.0,
+            offsetLX: anchor == 0 ? 10.0 : (anchor == 2 ? -10.0 : 0.0),
             offsetLY: 0.0,
             
             autoResizes: true,

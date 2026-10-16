@@ -19,8 +19,8 @@ env:
   # Bumped with every modified release. The gate below insists the strings that
   # end up inside the app carry exactly this tag, in both languages: a settings
   # page that says V2.0 on a V3.0 build is a lie that nothing else catches.
-  MOD_TAG_ZH: '修改版V3.1'
-  MOD_TAG_EN: 'Mod V3.1'
+  MOD_TAG_ZH: '修改版V3.2'
+  MOD_TAG_EN: 'Mod V3.2'
 
 jobs:
   build:
