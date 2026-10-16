@@ -19,8 +19,8 @@ env:
   # Bumped with every modified release. The gate below insists the strings that
   # end up inside the app carry exactly this tag, in both languages: a settings
   # page that says V2.0 on a V3.0 build is a lie that nothing else catches.
-  MOD_TAG_ZH: '修改版V3.0'
-  MOD_TAG_EN: 'Mod V3.0'
+  MOD_TAG_ZH: '修改版V3.1'
+  MOD_TAG_EN: 'Mod V3.1'
 
 jobs:
   build:
@@ -157,7 +157,19 @@ jobs:
             || { echo "FAIL: en bundle does not carry the '$MOD_TAG_EN' tag"; exit 1; }
           # The halo's rows, both languages. A key that only reaches one file
           # shows up as raw English on a Chinese phone, with no error anywhere.
-          for KEY in 'Text Halo' 'Text Outline' 'Outline Width' 'Outline Color' 'Text Glow' 'Glow Width' 'Glow Color' 'If nothing changes, turn the HUD switch off and on again, or respring the device.'; do
+          # The last two are V3.1's: the app restarts a HUD that is still on the
+          # previous build's code, and says so on the home page.
+          for KEY in \
+            'Text Halo' \
+            'Text Outline' \
+            'Outline Width' \
+            'Outline Color' \
+            'Text Glow' \
+            'Glow Width' \
+            'Glow Color' \
+            'If nothing changes, turn the HUD switch off and on again, or respring the device.' \
+            'The HUD was running an older build, so it was restarted.' \
+            'The HUD is still running an older build. Turn the HUD off and on again.'; do
             echo "$ZH_DUMP" | grep -q "$KEY" \
               || { echo "FAIL: zh bundle is missing the '$KEY' string"; exit 1; }
             echo "$EN_DUMP" | grep -q "$KEY" \

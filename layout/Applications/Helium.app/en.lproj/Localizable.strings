@@ -18,13 +18,15 @@
 "Opening HUD" = "Opening HUD";
 "Status: Running" = "Status: Running";
 "Status: Stopped" = "Status: Stopped";
+"The HUD is still running an older build. Turn the HUD off and on again." = "The HUD is still running an older build. Turn the HUD off and on again.";
+"The HUD was running an older build, so it was restarted." = "The HUD was running an older build, so it was restarted.";
 
 /* SettingsView.swift */
 "Save" = "Save";
 "Version " = "Version ";
 "UNKNOWN" = "UNKNOWN";
 "Release" = "Release";
-"Mod Version" = "Mod V3.0";
+"Mod Version" = "Mod V3.1";
 "Date Locale" = "Date Locale";
 "Weather Api key" = "QWeather Api key";
 "Hide Save Confirmation Popup" = "Hide Save Confirmation Popup";

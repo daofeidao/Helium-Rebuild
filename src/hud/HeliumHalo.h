@@ -30,6 +30,12 @@
 @property (nonatomic, readonly) BOOL isActive;            // either effect switched on
 @property (nonatomic, readonly) CGFloat pad;              // room the frame needs
 
+/// True when two styles would paint the same thing. A repaint is skipped when
+/// nothing that reaches the screen has changed, and the style is part of that:
+/// dragging the width slider has to repaint even though the text is identical.
+- (BOOL)isEqual:(id)object;
+- (NSUInteger)hash;
+
 @end
 
 /// Reads the halo keys out of one widget set's properties. Missing keys mean

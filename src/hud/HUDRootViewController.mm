@@ -22,6 +22,11 @@
 #define NOTIFY_UI_LOCKSTATE    "com.apple.springboard.lockstate"
 #define NOTIFY_LS_APP_CHANGED  "com.apple.LaunchServices.ApplicationsChanged"
 
+// What a text label was last painted with, kept on the label itself: each
+// widget set has its own, and they update on independent timers, so one shared
+// record would be overwritten by the next widget before it could ever match.
+static const void *kLastPaintSignature = &kLastPaintSignature;
+
 static void LaunchServicesApplicationStateChanged
 (CFNotificationCenterRef center,
  void *observer,
@@ -439,6 +444,25 @@ static void ReloadHUD
 #endif
     NSAttributedString *attributedText = formattedAttributedString(identifiers, fontSize, label.textColor, [self apiKey], [self dateLocale]);
     if (attributedText) {
+        // Everything below is what this method reads, so an unchanged signature
+        // means an unchanged screen and there is nothing to do. A widget that
+        // refreshes every second but whose text changes once a minute was
+        // otherwise laying out three labels, re-rendering a blurred shadow and
+        // invalidating a live backdrop sixty times a minute, and the backdrop
+        // is the expensive one: it samples whatever is behind it.
+        //
+        // The halo style is part of the signature rather than assumed constant:
+        // a reload that only moves the width slider leaves the text identical
+        // and still has to repaint. Bounds, because a reload can resize the box
+        // without touching the text.
+        NSArray *signature = @[attributedText, @(fontSize), @(autoResizes), @(width), @(height),
+                               haloStyle ?: [[HeliumHaloStyle alloc] init]];
+        NSArray *lastSignature = objc_getAssociatedObject(label, kLastPaintSignature);
+        if (lastSignature && [signature isEqualToArray:lastSignature]) {
+            return;
+        }
+        objc_setAssociatedObject(label, kLastPaintSignature, signature, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+
         // NSLog(@"boom attr:%@", attributedText);
         [label setAttributedText: attributedText];
         [maskLabel setAttributedText: attributedText];

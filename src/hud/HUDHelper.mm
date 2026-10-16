@@ -106,7 +106,79 @@ void SetHUDEnabled(BOOL isEnabled)
     }
 }
 
-void waitForNotification(void (^onFinish)(), BOOL isEnabled) {
+#pragma mark - Which build the running HUD is
+
+static NSString *CurrentExecutablePath(void)
+{
+    uint32_t size = 0;
+    _NSGetExecutablePath(NULL, &size);
+    char *buffer = (char *)calloc(1, size);
+    _NSGetExecutablePath(buffer, &size);
+    NSString *path = [NSString stringWithUTF8String:buffer];
+    free(buffer);
+    return path;
+}
+
+// Next to hud.pid and for the same reason: the app and the HUD are the same
+// bundle, so they share this directory, and deleting the app clears both.
+static NSString *GetBuildRecordPath(void)
+{
+    static NSString *path = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        NSString *caches = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) firstObject];
+        path = [caches stringByAppendingPathComponent:@"hud.build"];
+    });
+    return path;
+}
+
+NSString *HUDBuildFingerprint(void)
+{
+    NSDictionary *attributes = [[NSFileManager defaultManager] attributesOfItemAtPath:CurrentExecutablePath() error:nil];
+    if (!attributes)
+        return @"unknown";
+
+    NSDate *modified = [attributes objectForKey:NSFileModificationDate];
+    NSNumber *size = [attributes objectForKey:NSFileSize];
+    return [NSString stringWithFormat:@"%lld-%lld", (long long)[modified timeIntervalSince1970], [size longLongValue]];
+}
+
+void RecordHUDBuildFingerprint(void)
+{
+    [HUDBuildFingerprint() writeToFile:GetBuildRecordPath()
+                          atomically:YES
+                            encoding:NSUTF8StringEncoding
+                               error:nil];
+}
+
+void ClearHUDBuildFingerprint(void)
+{
+    [[NSFileManager defaultManager] removeItemAtPath:GetBuildRecordPath() error:nil];
+}
+
+BOOL IsHUDBuildStale(void)
+{
+    // Nothing running: starting one is the switch's job, not this function's.
+    if (!IsHUDEnabled())
+        return NO;
+
+    NSString *recorded = [NSString stringWithContentsOfFile:GetBuildRecordPath()
+                                                  encoding:NSUTF8StringEncoding
+                                                     error:nil];
+    // A running HUD with no record at all is a HUD that predates this
+    // bookkeeping, ie one from before this version. That is the case this
+    // function exists for, so it counts as stale.
+    if (!recorded)
+        return YES;
+
+    recorded = [recorded stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    return ![recorded isEqualToString:HUDBuildFingerprint()];
+}
+
+#pragma mark -
+
+void waitForNotification(void (^onFinish)(), BOOL isEnabled)
+{
     if (isEnabled)
    {
        dispatch_semaphore_t semaphore = dispatch_semaphore_create(0);

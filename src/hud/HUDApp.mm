@@ -122,6 +122,10 @@ int main(int argc, char *argv[])
                         atomically:YES
                           encoding:NSUTF8StringEncoding
                              error:nil];
+
+            // Which build this process is, so the app can tell whether the HUD
+            // it is looking at was left over from the previous install.
+            RecordHUDBuildFingerprint();
             
             [UIScreen initialize];
             CFRunLoopGetCurrent();
@@ -174,6 +178,10 @@ int main(int argc, char *argv[])
                 kill(pid, SIGKILL);
                 unlink(GetPIDFilePath().UTF8String);
             }
+
+            // With the HUD gone the record of what it was has no meaning: the
+            // next HUD writes its own when it starts.
+            ClearHUDBuildFingerprint();
 
             return EXIT_SUCCESS;
         }

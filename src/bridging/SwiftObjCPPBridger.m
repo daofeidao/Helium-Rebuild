@@ -12,6 +12,7 @@
 extern BOOL IsHUDEnabled(void);
 extern void SetHUDEnabled(BOOL isEnabled);
 extern void waitForNotification(void (^onFinish)(), BOOL isEnabled);
+extern BOOL IsHUDBuildStale(void);
 
 BOOL IsHUDEnabledBridger()
 {
@@ -26,4 +27,9 @@ void SetHUDEnabledBridger(BOOL isEnabled)
 void waitForNotificationBridger(void (^onFinish)(), BOOL isEnabled)
 {
     waitForNotification(onFinish, isEnabled);
+}
+
+BOOL IsHUDBuildStaleBridger()
+{
+    return IsHUDBuildStale();
 }

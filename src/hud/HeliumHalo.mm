@@ -4,6 +4,29 @@
 
 @implementation HeliumHaloStyle
 
+- (BOOL)isEqual:(id)object
+{
+    if (self == object)
+        return YES;
+    if (![object isKindOfClass:[HeliumHaloStyle class]])
+        return NO;
+
+    HeliumHaloStyle *other = (HeliumHaloStyle *)object;
+    // Colours arrive as freshly parsed UIColors, so identity is not enough.
+    return self.outlineWidth == other.outlineWidth
+        && self.glowWidth == other.glowWidth
+        && (self.outlineColor == other.outlineColor || [self.outlineColor isEqual:other.outlineColor])
+        && (self.glowColor == other.glowColor || [self.glowColor isEqual:other.glowColor]);
+}
+
+- (NSUInteger)hash
+{
+    return (NSUInteger)(self.outlineWidth * 1000.0)
+         ^ (NSUInteger)(self.glowWidth * 1000.0)
+         ^ self.outlineColor.hash
+         ^ self.glowColor.hash;
+}
+
 - (BOOL)isActive
 {
     return self.outlineWidth > 0.0 || self.glowWidth > 0.0;
