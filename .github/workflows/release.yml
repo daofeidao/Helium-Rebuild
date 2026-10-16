@@ -5,6 +5,13 @@ on:
     tags:
       - "v*.*.**"
 
+# The token is read-only by default on a freshly created repository, which is
+# how the upload step below managed to build a perfectly good tipa and then
+# fail with a 403 creating the release for it. Asking for exactly what is
+# needed keeps the rest of the token read-only.
+permissions:
+  contents: write
+
 env:
   THEOS: ''
   XCODE_VERSION: '15.1'
