@@ -12,7 +12,18 @@ env:
 
 jobs:
   build:
-    runs-on: macos-13
+    # macos-13 is gone: GitHub retired that image, and a job asking for it does
+    # not fail, it queues forever with an empty runner_name. That is what the
+    # upstream file asks for, and it is why its builds never start.
+    #
+    # macos-14 is the newest image that still offers Xcode 15.1, which is what
+    # XCODE_VERSION pins and what theos needs: the newest theos SDK is
+    # iPhoneOS16.5.sdk, whose SwiftUI .swiftinterface was built by Apple Swift
+    # 5.8, so a Swift 6 compiler refuses it with
+    #   "failed to build module 'SwiftUI'; this SDK is not supported by the compiler"
+    # Matching the toolchain to the SDK is the fix; there is no newer theos SDK
+    # to move up to.
+    runs-on: macos-14
 
     steps:
       - name: Setup Xcode version
@@ -80,6 +91,60 @@ jobs:
         run: |
           cd $GITHUB_WORKSPACE/Helium
           ./ipabuild.sh
+
+      # Fail-closed, and before anything is uploaded. Every check exits 1
+      # explicitly so that a gate which dies cannot be read as a gate which
+      # passed.
+      #
+      # The entitlement pair is the part worth having: an .app without
+      # platform-application installs as an ordinary app, and one without
+      # run-unsigned-code never gets the injected HUD to start. Either way the
+      # upload succeeds, the release looks correct, and the phone shows nothing
+      # -- exactly the failure that costs an hour to notice.
+      #
+      # The language check guards the other silent one: a key that reaches only
+      # one .strings file shows raw English on a Chinese phone, with no error
+      # anywhere.
+      - name: Verify artifact
+        run: |
+          set -euo pipefail
+          cd $GITHUB_WORKSPACE/Helium
+          TIPA=build/Helium.tipa
+          [ -s "$TIPA" ] || { echo "FAIL: $TIPA missing or empty"; exit 1; }
+
+          rm -rf .verify && mkdir .verify && cd .verify
+          unzip -q "../$TIPA"
+          APP=Payload/Helium.app
+          [ -d "$APP" ] || { echo "FAIL: $APP missing"; exit 1; }
+          BIN=$APP/Helium
+          [ -f "$BIN" ] || { echo "FAIL: main binary missing"; exit 1; }
+
+          BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' $APP/Info.plist)
+          [ "$BID" = "com.leemin.helium" ] || { echo "FAIL: bundle id is '$BID'"; exit 1; }
+
+          SHORT=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' $APP/Info.plist)
+          case "$SHORT" in
+            ''|*[!0-9.]*) echo "FAIL: CFBundleShortVersionString '$SHORT' is not dot-separated digits"; exit 1 ;;
+          esac
+
+          ENT=$(codesign -d --entitlements - "$BIN" 2>/dev/null || true)
+          echo "$ENT" | grep -q 'platform-application' \
+            || { echo "FAIL: platform-application entitlement missing (would install as an ordinary app)"; exit 1; }
+          echo "$ENT" | grep -q 'run-unsigned-code' \
+            || { echo "FAIL: run-unsigned-code entitlement missing (the HUD would never run)"; exit 1; }
+
+          ZH=$APP/zh-Hans.lproj/Localizable.strings
+          EN=$APP/en.lproj/Localizable.strings
+          [ -f "$ZH" ] || { echo "FAIL: $ZH missing"; exit 1; }
+          [ -f "$EN" ] || { echo "FAIL: $EN missing"; exit 1; }
+          plutil -convert xml1 -o - "$ZH" | grep -q '修改版V1.0' \
+            || { echo "FAIL: zh bundle does not carry the V1.0 tag"; exit 1; }
+          plutil -convert xml1 -o - "$EN" | grep -q 'Mod V1.0' \
+            || { echo "FAIL: en bundle does not carry the V1.0 tag"; exit 1; }
+
+          SIZE=$(stat -f%z "../$TIPA")
+          [ "$SIZE" -gt 1000000 ] || { echo "FAIL: tipa is only $SIZE bytes"; exit 1; }
+          echo "artifact self-check passed: $BID $SHORT, $SIZE bytes"
 
       - name: Collect symbols
         run: |
